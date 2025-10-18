@@ -12,6 +12,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.sql.Array;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -59,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
                 productName.setText("");
                 productPrice.setText("");
 
-//                Toast.makeText(MainActivity.this, "Add product", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "Add product", Toast.LENGTH_SHORT).show();
                 viewProducts();
             }
         });
@@ -67,18 +68,64 @@ public class MainActivity extends AppCompatActivity {
         findBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "Find product", Toast.LENGTH_SHORT).show();
+                String name = productName.getText().toString();
+                String priceStr = productPrice.getText().toString();
+                Cursor cursor;
+
+                if (!name.isEmpty() && !priceStr.isEmpty()) {
+                    double price = Double.parseDouble(priceStr);
+                    cursor = dbHandler.findProduct(name, price);
+                } else if (!name.isEmpty()) {
+                    cursor = dbHandler.findProduct(name);
+                } else if (!priceStr.isEmpty()) {
+                    double price = Double.parseDouble(priceStr);
+                    cursor = dbHandler.findProduct(price);
+                } else {
+                    Toast.makeText(MainActivity.this, "Cannot be empty.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (cursor.getCount() == 0) {
+                    Toast.makeText(MainActivity.this, "No products found", Toast.LENGTH_SHORT).show();
+                } else {
+                    StringBuilder results = new StringBuilder();
+                    results.append("Found ").append(cursor.getCount()).append(" product(s):\n");
+                    while (cursor.moveToNext()) {
+                        String foundName = cursor.getString(1);
+                        String foundPrice = cursor.getString(2);
+                        results.append("- ").append(foundName).append(" ($").append(foundPrice).append(")\n");
+                    }
+                    Toast.makeText(MainActivity.this, results.toString().trim(), Toast.LENGTH_LONG).show();
+                }
+                cursor.close();
             }
         });
 
         deleteBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "Delete product", Toast.LENGTH_SHORT).show();
+                String name = productName.getText().toString();
+
+                if (name.isEmpty()) {
+                    Toast.makeText(MainActivity.this, "Cannot be empty.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                boolean result = dbHandler.deleteProduct(name);
+
+                if (result) {
+                    productId.setText("Product ID");
+                    productName.setText("");
+                    productPrice.setText("");
+                    Toast.makeText(MainActivity.this, "Product deleted", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "No product to delete", Toast.LENGTH_SHORT).show();
+                }
+                viewProducts();
             }
         });
-
-
+        // db handler
+        MyDBHandler dbhandler = new MyDBHandler(this);
         viewProducts();
     }
 
@@ -87,12 +134,12 @@ public class MainActivity extends AppCompatActivity {
         Cursor cursor = dbHandler.getData();
         if (cursor.getCount() == 0) {
             Toast.makeText(MainActivity.this, "Nothing to show", Toast.LENGTH_SHORT).show();
-        } else {
+        }
+        else {
             while (cursor.moveToNext()) {
-                productList.add(cursor.getString(1) + " (" +cursor.getString(2)+")");
+                productList.add(cursor.getString(1) + " (" + cursor.getString(2) + ") ");
             }
         }
-
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, productList);
         productListView.setAdapter(adapter);
     }

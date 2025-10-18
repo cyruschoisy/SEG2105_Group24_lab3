@@ -5,6 +5,8 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.widget.ArrayAdapter;
+import android.widget.Toast;
 
 public class MyDBHandler extends SQLiteOpenHelper {
     private static final String TABLE_NAME = "products";
@@ -52,36 +54,25 @@ public class MyDBHandler extends SQLiteOpenHelper {
         db.close();
     }
 
-    public Product findProduct(String name) {
+    public Cursor findProduct(String productName) {
         SQLiteDatabase db = this.getReadableDatabase();
-
-        String query = "SELECT * FROM " + TABLE_NAME +
-                " WHERE " + COLUMN_PRODUCT_NAME + " = ?";
-        Cursor cursor = db.rawQuery(query, new String[]{name});
-
-        Product product = null;
-
-        if (cursor.moveToFirst()) {
-            int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID));
-            String productName = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PRODUCT_NAME));
-            double price = cursor.getDouble(cursor.getColumnIndexOrThrow(COLUMN_PRODUCT_PRICE));
-            product = new Product(productName, price);
-        }
-
-        cursor.close();
-        db.close();
-
-        return product; // returns null if not found
+        String query = "SELECT * FROM " + TABLE_NAME + " WHERE " + COLUMN_PRODUCT_NAME + " = ?";
+        return db.rawQuery(query, new String[]{productName});
     }
-
+    public Cursor findProduct(double productPrice) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT * FROM " + TABLE_NAME + " WHERE " + COLUMN_PRODUCT_PRICE + " = ?";
+        return db.rawQuery(query, new String[]{String.valueOf(productPrice)});
+    }
+    public Cursor findProduct(String productName, double productPrice) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT * FROM " + TABLE_NAME + " WHERE " + COLUMN_PRODUCT_NAME + " = ? AND " + COLUMN_PRODUCT_PRICE + " = ?";
+        return db.rawQuery(query, new String[]{productName, String.valueOf(productPrice)});
+    }
     public boolean deleteProduct(String name) {
         SQLiteDatabase db = this.getWritableDatabase();
 
-        int result = db.delete(TABLE_NAME, COLUMN_PRODUCT_NAME + " = ?", new String[]{name});
-        db.close();
-
-        return result > 0; // true if at least 1 row deleted
+        return db.delete(TABLE_NAME, COLUMN_PRODUCT_NAME + " = ?", new String[]{name}) > 0;
     }
-
 
 }
